@@ -61,8 +61,11 @@ learning
 completed  
   
   
-## Roadmaps  
+## Projects 
   
 id  
 user_id  
-generated_plan  
+project_idea  
+project_resources  
+project_status 
+explanation

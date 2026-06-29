@@ -47,35 +47,16 @@ Skill confidence score
   
 ## Step 3  
   
-Create roadmap  
+Create a small project  
   
   
 Prompt:  
   
-"You are a senior engineer.  
-Create a 90 day plan  
-for this candidate."  
-  
+"You are a senior engineer with 10+ years of experience.  
+Create a project for this candidate based on skills gaps. "  
   
 Output:  
   
-Learning tasks  
-Projects  
-Milestones  
-  
-  
----  
-  
-## Step 4  
-  
-Career Coach  
-  
-Chat interface:  
-  
-User:  
-"What should I learn next?"  
-  
-AI:  
-  
-Based on your goals,  
-learn Docker next because...  
+Project:  
+Resources:  
+Explanation: 

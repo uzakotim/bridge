@@ -29,7 +29,7 @@ Then creates:
 2. User selects target role  
 3. User uploads CV or enters skills  
 4. System analyzes market requirements  
-5. System creates personalized roadmap  
+5. System creates a personalized project for skill gaps 
 6. User tracks progress  
 7. System recommends jobs  
   

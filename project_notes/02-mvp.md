@@ -91,20 +91,21 @@ Kubernetes
   
 ---  
   
-## 4. Roadmap Generator  
+## 4. Small Project Generator  
   
 Generate:  
   
-Week 1:  
-Learn Docker basics  
-  
-Week 2:  
-Build containerized API  
-  
-Week 3:  
-Deploy project  
-  
-  
+Project idea 1:  
+- short explanation  
+- links to resources  
+- project idea  
+
+
+Project idea 2:  
+- short explanation  
+- links to resources  
+- project idea  
+
 Each item:  
 - explanation  
 - resources  
