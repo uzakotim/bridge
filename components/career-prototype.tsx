@@ -131,10 +131,10 @@ export function CareerPrototype() {
         </header>
 
         {!isAuthenticated ? (
-          <section className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+          <section className="grid gap-5 lg:grid-cols-1">
             <form
               onSubmit={handleSignIn}
-              className="rounded-lg border border-[#d8d4ca] bg-white p-5 shadow-sm"
+              className="mx-auto rounded-lg border border-[#d8d4ca] bg-white p-5 shadow-sm"
             >
               <div className="flex items-center gap-3">
                 <div className="flex size-10 items-center justify-center rounded-lg bg-[#e1f0ed] text-[#247a70]">
@@ -174,7 +174,8 @@ export function CareerPrototype() {
               </Button>
             </form>
 
-            <div className="rounded-lg border border-[#d8d4ca] bg-[#172022] p-5 text-white shadow-sm">
+            {/* For development only - later can be removed */}
+            {/* <div className="rounded-lg border border-[#d8d4ca] bg-[#172022] p-5 text-white shadow-sm">
               <div className="flex items-center gap-3">
                 <BadgeCheck className="size-5 text-[#f0b35b]" />
                 <h2 className="text-lg font-semibold">Phase 1 scope</h2>
@@ -186,7 +187,7 @@ export function CareerPrototype() {
                   </div>
                 ))}
               </div>
-            </div>
+            </div> */}
           </section>
         ) : (
           <section className="grid gap-5 xl:grid-cols-[380px_minmax(0,1fr)]">

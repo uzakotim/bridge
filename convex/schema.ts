@@ -1,37 +1,40 @@
 // convex/schema.ts
+import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+
+
 export default defineSchema({
-  users: v.object({
+  users: defineTable({
     email: v.string(),
     name: v.string(),
     role: v.optional(v.string()),
     createdAt: v.string(), // ISO timestamp
   }),
-  userSkills: v.object({
+  userSkills: defineTable({
     userId: v.id("users"),
     skillName: v.string(),
-    level: v.int(), // 1‑10
+    level: v.number(), // 1‑10
   }),
-  targetRoles: v.object({
+  targetRoles: defineTable({
     name: v.string(),
   }),
-  jobs: v.object({
+  jobs: defineTable({
     title: v.string(),
     company: v.string(),
     description: v.string(),
   }),
-  jobSkills: v.object({
+  jobSkills: defineTable({
     jobId: v.id("jobs"),
     skillName: v.string(),
-    importance: v.int(), // 1‑10
+    importance: v.number(), // 1‑10
   }),
-  skillGaps: v.object({
+  skillGaps: defineTable({
     userId: v.id("users"),
     skill: v.string(),
     status: v.union(v.literal("missing"), v.literal("learning"), v.literal("completed")),
   }),
-  projects: v.object({
+  projects: defineTable({
     userId: v.id("users"),
     projectIdea: v.string(),
     resources: v.string(),

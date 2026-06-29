@@ -1,23 +1,34 @@
 // convex/auth.ts
-import { Auth } from "convex/server";
-import { GoogleAuthProvider } from "@auth/core/providers/google";
-import { getUser } from "@convex-dev/auth/server";
+"use node";
 
-// Placeholder function to verify Google ID token and return user email/name.
-export async function verifyGoogleToken(token: string): Promise<{ email: string; name: string }> {
-  // In a real implementation, verify token with Google APIs.
-  // Here we simply decode the JWT payload (no verification) for demo purposes.
-  const payload = JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString());
-  const email = payload?.email ?? "";
-  const name = payload?.name ?? "";
-  if (!email) throw new Error("Invalid Google token");
-  return { email, name };
+import { v } from "convex/values";
+import { action } from "./_generated/server";
+
+// Simple JWT payload decoder (no verification). Replace with real verification in prod.
+function decodeJwt(token: string) {
+  const parts = token.split(".");
+  if (parts.length !== 3) throw new Error("Invalid JWT token");
+  const payload = parts[1];
+  const decoded = Buffer.from(payload, "base64").toString("utf-8");
+  return JSON.parse(decoded);
 }
 
-export async function getOrCreateUser(auth: Auth, email: string, name: string) {
-  // Search for existing user
-  const existing = await auth.query("users", "byEmail", { email });
-  if (existing?.length) return existing[0];
-  // Create new user document
-  return await auth.mutation("users", "create", { email, name, createdAt: new Date().toISOString() });
-}
+export const verifyGoogleToken = action({
+  args: { token: v.string() },
+  handler: async (ctx, { token }) => {
+    const payload = decodeJwt(token) as {
+      sub?: string;
+      email?: string;
+      name?: string;
+    };
+    const { email, name } = payload;
+    if (!email) throw new Error("Invalid token payload");
+
+    // Upsert user in Convex DB (users:createOrFetch mutation)
+    const userId = await ctx.runMutation("users:createOrFetch", {
+      email,
+      name: name ?? "",
+    });
+    return { _id: userId, email, name: name ?? "" };
+  },
+});
