@@ -3,13 +3,16 @@
 
 import { v } from "convex/values";
 import { action } from "./_generated/server";
+import { api } from "./_generated/api";
 
-// Simple JWT payload decoder (no verification). Replace with real verification in prod.
+// Simple JWT payload decoder (no signature verification). Replace with real lib in prod.
 function decodeJwt(token: string) {
   const parts = token.split(".");
   if (parts.length !== 3) throw new Error("Invalid JWT token");
   const payload = parts[1];
-  const decoded = Buffer.from(payload, "base64").toString("utf-8");
+  // base64url → base64
+  const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+  const decoded = Buffer.from(base64, "base64").toString("utf-8");
   return JSON.parse(decoded);
 }
 
@@ -22,13 +25,14 @@ export const verifyGoogleToken = action({
       name?: string;
     };
     const { email, name } = payload;
-    if (!email) throw new Error("Invalid token payload");
+    if (!email) throw new Error("Invalid token payload: missing email");
 
-    // Upsert user in Convex DB (users:createOrFetch mutation)
-    const userId = await ctx.runMutation("users:createOrFetch", {
+    // Upsert user via typed mutation reference
+    const userId = await ctx.runMutation(api.users.createOrFetch, {
       email,
       name: name ?? "",
     });
+
     return { _id: userId, email, name: name ?? "" };
   },
 });

@@ -11,7 +11,7 @@ import {
   Sparkles,
   UserRound,
 } from "lucide-react";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState, useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -68,10 +68,71 @@ export function CareerPrototype() {
     setProfile((current) => ({ ...current, [field]: value }));
   }
 
-  function handleSignIn(event: FormEvent<HTMLFormElement>) {
+  const handleSignIn = (event: FormEvent<HTMLFormElement>) => {
+    // No-op: sign-in is handled via Google Sign-In button.
     event.preventDefault();
-    setIsAuthenticated(true);
-  }
+  };
+
+  // Handle Google Sign‑In response
+  const handleGoogleResponse = async (response: any) => {
+    try {
+      const token = response?.credential;
+      if (!token) throw new Error('No credential returned from Google');
+      const res = await fetch('/api/verify-google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+      // Attempt to parse JSON; if it fails, fall back to plain text for error details
+      let data: any;
+      try {
+        data = await res.json();
+      } catch (parseError) {
+        const text = await res.text();
+        throw new Error(text || 'Invalid response from server');
+      }
+      if (!res.ok) {
+        throw new Error(data?.error || 'Verification failed');
+      }
+      // Update profile with returned name/email
+      setProfile((prev) => ({
+        ...prev,
+        name: data.name ?? prev.name,
+        email: data.email ?? prev.email,
+      }));
+      setIsAuthenticated(true);
+    } catch (err) {
+      console.error('Google sign‑in error:', err);
+    }
+  };
+  // Load Google Identity Services script once
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      // @ts-ignore
+      if (window.google && window.google.accounts && window.google.accounts.id) {
+        // @ts-ignore
+        window.google.accounts.id.initialize({
+          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
+          callback: handleGoogleResponse,
+        });
+        // @ts-ignore
+        window.google.accounts.id.renderButton(
+          document.getElementById('google-signin-button') as HTMLElement,
+          { type: 'standard', theme: 'outline', size: 'large' }
+        );
+      }
+    };
+    document.head.appendChild(script);
+    return () => {
+      // Clean up script if component unmounts
+      document.head.removeChild(script);
+    };
+  }, []);
+
 
   async function handleAnalyze(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -132,62 +193,19 @@ export function CareerPrototype() {
 
         {!isAuthenticated ? (
           <section className="grid gap-5 lg:grid-cols-1">
-            <form
-              onSubmit={handleSignIn}
-              className="mx-auto rounded-lg border border-[#d8d4ca] bg-white p-5 shadow-sm"
-            >
+            {/* Google Sign-In */}
+            <div className="mx-auto rounded-lg border border-[#d8d4ca] bg-white p-5 shadow-sm flex flex-col items-center gap-4">
               <div className="flex items-center gap-3">
                 <div className="flex size-10 items-center justify-center rounded-lg bg-[#e1f0ed] text-[#247a70]">
                   <LockKeyhole className="size-5" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold">Authentication</h2>
-                  <p className="text-sm text-[#62706c]">Start one prototype user session.</p>
+                  <h2 className="text-lg font-semibold">Sign in with Google</h2>
+                  <p className="text-sm text-[#62706c]">Use your Google account to start the prototype session.</p>
                 </div>
               </div>
-
-              <div className="mt-5 grid gap-4">
-                <label className="grid gap-1.5 text-sm font-medium">
-                  Name
-                  <input
-                    className="h-10 rounded-md border border-[#c9c4b8] bg-[#fbfaf6] px-3 text-sm outline-none focus:border-[#247a70] focus:ring-3 focus:ring-[#247a70]/15"
-                    value={profile.name}
-                    onChange={(event) => updateProfile("name", event.target.value)}
-                    required
-                  />
-                </label>
-                <label className="grid gap-1.5 text-sm font-medium">
-                  Email
-                  <input
-                    className="h-10 rounded-md border border-[#c9c4b8] bg-[#fbfaf6] px-3 text-sm outline-none focus:border-[#247a70] focus:ring-3 focus:ring-[#247a70]/15"
-                    type="email"
-                    value={profile.email}
-                    onChange={(event) => updateProfile("email", event.target.value)}
-                    required
-                  />
-                </label>
-              </div>
-
-              <Button className="mt-5 h-10 w-full bg-[#247a70] hover:bg-[#1d635b]" type="submit">
-                Continue to profile
-                <ArrowRight className="size-4" />
-              </Button>
-            </form>
-
-            {/* For development only - later can be removed */}
-            {/* <div className="rounded-lg border border-[#d8d4ca] bg-[#172022] p-5 text-white shadow-sm">
-              <div className="flex items-center gap-3">
-                <BadgeCheck className="size-5 text-[#f0b35b]" />
-                <h2 className="text-lg font-semibold">Phase 1 scope</h2>
-              </div>
-              <div className="mt-5 grid gap-3 text-sm text-[#d7ddd9] sm:grid-cols-2">
-                {["Authentication", "Profile", "Job input", "AI skill extraction"].map((item) => (
-                  <div key={item} className="rounded-md border border-white/10 bg-white/5 p-3">
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </div> */}
+              <div id="google-signin-button"></div>
+            </div>
           </section>
         ) : (
           <section className="grid gap-5 xl:grid-cols-[380px_minmax(0,1fr)]">
