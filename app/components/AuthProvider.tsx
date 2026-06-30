@@ -77,7 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           throw new Error("Google authentication failed");
         }
 
-        const { _id } = await getOrCreateUser({
+        const _id: string = await getOrCreateUser({
           email: userInfo.email,
           name: userInfo.name,
         });
@@ -128,7 +128,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           throw new Error("Invalid session");
         }
 
-        const { _id } = await getOrCreateUser({
+        const _id: string = await getOrCreateUser({
           email: userInfo.email,
           name: userInfo.name ?? "",
         });

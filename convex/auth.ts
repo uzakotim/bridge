@@ -28,7 +28,7 @@ export const verifyGoogleToken = action({
     if (!email) throw new Error("Invalid token payload: missing email");
 
     // Upsert user via typed mutation reference
-    const userId = await ctx.runMutation(api.users.createOrFetch, {
+    const userId: string = await ctx.runMutation(api.users.createOrFetch, {
       email: email,
       name: name ?? "",
     });
