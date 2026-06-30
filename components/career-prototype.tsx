@@ -23,6 +23,7 @@ import {
   type ExtractedSkill,
 } from "@/lib/career-analysis";
 import { cn } from "@/lib/utils";
+import SignInButton from "@/app/components/SignInButton";
 
 type Profile = {
   name: string;
@@ -202,7 +203,7 @@ export function CareerPrototype() {
               <h2 className="ja-card-title">Sign in with Google</h2>
               <p className="ja-card-subtitle">Use your Google account to start the prototype session.</p>
             </div>
-            <div id="google-signin-button" className="ja-google-btn" />
+            <SignInButton />
           </div>
         ) : (
           <div className="ja-workspace">
