@@ -61,6 +61,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.error("No Google credential received");
           return;
         }
+        // Save session token
+        document.cookie = `google_token=${token}; path=/; max-age=${60 * 60 * 24 * 7}`;
+
         const res = await fetch("/api/verify-google", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -92,27 +95,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = () => {
     setUser(null);
-    // Clear token cookie for demo
-    document.cookie = "google_token=; Max-Age=0; path=/";
+    google.accounts.id.disableAutoSelect();
+    document.cookie =
+      "google_token=; Max-Age=0; path=/";
   };
 
   // On mount, check if a token already exists and try to load user.
   useEffect(() => {
     const init = async () => {
-      const token = document.cookie.replace(/(?:(?:^|.*;)\s*google_token\s*\=\s*([^;]*).*$)|^.*$/, "$1");
-      if (token) {
-        const userInfo = await fetch("/api/verify-google", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token }),
-        }).then((res) => res.json());
-        const { _id } = await getOrCreateUser({ email: userInfo.email, name: userInfo.name });
-        setUser({ _id, email: userInfo.email, name: userInfo.name });
+      const token = document.cookie
+        .split("; ")
+        .find(row => row.startsWith("google_token="))
+        ?.split("=")[1];
+
+      if (!token) {
+        setLoading(false);
+        return;
       }
+
+      try {
+        const res = await fetch("/api/verify-google", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ token }),
+        });
+
+        const userInfo = await res.json();
+
+        if (!userInfo.email) {
+          throw new Error("Invalid session");
+        }
+
+        const { _id } = await getOrCreateUser({
+          email: userInfo.email,
+          name: userInfo.name ?? "",
+        });
+
+        setUser({
+          _id,
+          email: userInfo.email,
+          name: userInfo.name ?? "",
+        });
+
+      } catch {
+        // invalid/expired token
+        document.cookie =
+          "google_token=; Max-Age=0; path=/";
+
+        setUser(null);
+      }
+
       setLoading(false);
     };
+
     init();
-  }, []);
+  }, [getOrCreateUser]);
 
   return (
     <AuthContext.Provider value={{ user, loading, signInWithGoogle, signOut }}>
