@@ -12,13 +12,15 @@ import {
   ArrowRight,
   TrendingUp,
   Zap,
+  LoaderCircle,
+  Loader,
 } from "lucide-react";
 
 
 const tools = [
   {
     id: "job-analyzer",
-    href: "/career-prototype",
+    href: "/job-analyzer",
     icon: BriefcaseBusiness,
     label: "Job Analyzer",
     badge: "Live",
@@ -78,7 +80,7 @@ const stats = [
 
 export default function DashboardPage() {
   // check if user is signed in
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   return (
     <main className="dashboard-root">
       {/* Background grid */}
@@ -96,7 +98,7 @@ export default function DashboardPage() {
 
           <nav className="dashboard-nav" aria-label="Main navigation">
             {/* Login button */}
-            {user ? <LogOutButton /> : <SignInButton />}
+            {loading ? <div className="dashboard-nav-link flex items-center gap-2"><Loader className="animate-spin" size={20} strokeWidth={1} />Loading...</div> : <>{user ? <LogOutButton /> : <SignInButton />}</>}
             <a href="#tools" className="dashboard-nav-link">Tools</a>
             <a href="#" className="dashboard-nav-link">Profile</a>
             <div className="dashboard-nav-badge">
