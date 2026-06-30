@@ -38,7 +38,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     script.async = true;
     document.body.appendChild(script);
   }, []);
-
   // app/components/AuthProvider.tsx (excerpt)
   const signInWithGoogle = async () => {
     // 1️⃣ Open Google sign‑in popup (use Google Identity Services)
@@ -64,7 +63,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     client.requestAccessToken(); // triggers Google sign‑in UI
   };
-
 
   const signOut = () => {
     setUser(null);

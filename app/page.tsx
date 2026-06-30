@@ -1,5 +1,5 @@
-import { CareerPrototype } from "@/components/career-prototype";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return <CareerPrototype />;
+  redirect("/dashboard");
 }

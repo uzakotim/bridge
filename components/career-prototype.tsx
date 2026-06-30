@@ -1,8 +1,7 @@
 "use client";
 
 import {
-  ArrowRight,
-  BadgeCheck,
+  ArrowLeft,
   BriefcaseBusiness,
   CircleCheck,
   ClipboardList,
@@ -10,10 +9,11 @@ import {
   MapPin,
   Sparkles,
   UserRound,
+  Zap,
 } from "lucide-react";
+import Link from "next/link";
 import { FormEvent, useMemo, useState, useEffect } from "react";
 
-import { Button } from "@/components/ui/button";
 import {
   groupByCategory,
   ownsSkill,
@@ -68,33 +68,24 @@ export function CareerPrototype() {
     setProfile((current) => ({ ...current, [field]: value }));
   }
 
-  const handleSignIn = (event: FormEvent<HTMLFormElement>) => {
-    // No-op: sign-in is handled via Google Sign-In button.
-    event.preventDefault();
-  };
-
   // Handle Google Sign‑In response
   const handleGoogleResponse = async (response: any) => {
     try {
       const token = response?.credential;
-      if (!token) throw new Error('No credential returned from Google');
-      const res = await fetch('/api/verify-google', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      if (!token) throw new Error("No credential returned from Google");
+      const res = await fetch("/api/verify-google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token }),
       });
-      // Attempt to parse JSON; if it fails, fall back to plain text for error details
       let data: any;
       try {
         data = await res.json();
-      } catch (parseError) {
+      } catch {
         const text = await res.text();
-        throw new Error(text || 'Invalid response from server');
+        throw new Error(text || "Invalid response from server");
       }
-      if (!res.ok) {
-        throw new Error(data?.error || 'Verification failed');
-      }
-      // Update profile with returned name/email
+      if (!res.ok) throw new Error(data?.error || "Verification failed");
       setProfile((prev) => ({
         ...prev,
         name: data.name ?? prev.name,
@@ -102,18 +93,19 @@ export function CareerPrototype() {
       }));
       setIsAuthenticated(true);
     } catch (err) {
-      console.error('Google sign‑in error:', err);
+      console.error("Google sign‑in error:", err);
     }
   };
+
   // Load Google Identity Services script once
   useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
     script.async = true;
     script.defer = true;
     script.onload = () => {
       // @ts-ignore
-      if (window.google && window.google.accounts && window.google.accounts.id) {
+      if (window.google?.accounts?.id) {
         // @ts-ignore
         window.google.accounts.id.initialize({
           client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
@@ -121,18 +113,16 @@ export function CareerPrototype() {
         });
         // @ts-ignore
         window.google.accounts.id.renderButton(
-          document.getElementById('google-signin-button') as HTMLElement,
-          { type: 'standard', theme: 'outline', size: 'large' }
+          document.getElementById("google-signin-button") as HTMLElement,
+          { type: "standard", theme: "filled_black", size: "large" }
         );
       }
     };
     document.head.appendChild(script);
     return () => {
-      // Clean up script if component unmounts
       document.head.removeChild(script);
     };
   }, []);
-
 
   async function handleAnalyze(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -143,9 +133,7 @@ export function CareerPrototype() {
     try {
       const response = await fetch("/api/extract-skills", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ jobDescription }),
       });
       const result = (await response.json()) as {
@@ -154,11 +142,7 @@ export function CareerPrototype() {
         notice?: string;
         error?: string;
       };
-
-      if (!response.ok) {
-        throw new Error(result.error ?? "Skill extraction failed.");
-      }
-
+      if (!response.ok) throw new Error(result.error ?? "Skill extraction failed.");
       setExtractedSkills(result.skills ?? []);
       setExtractionSource(result.source ?? null);
       setExtractNotice(result.notice ?? "");
@@ -172,81 +156,95 @@ export function CareerPrototype() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f6f1] text-[#1e2528]">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
-        <header className="flex flex-col gap-4 border-b border-[#d8d4ca] pb-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-sm font-medium text-[#52615d]">
-              <Sparkles className="size-4 text-[#247a70]" />
-              Phase 1 prototype
+    <main className="ja-root">
+      {/* Shared background grid */}
+      <div className="dashboard-grid-bg" aria-hidden="true" />
+
+      <div className="ja-container">
+        {/* ── Header ── */}
+        <header className="ja-header">
+          <div className="ja-header-left">
+            <Link href="/dashboard" className="ja-back-link">
+              <ArrowLeft size={14} />
+              Dashboard
+            </Link>
+            <div className="ja-logo">
+              <Zap className="dashboard-logo-icon" />
+              <span className="dashboard-logo-text">Bridge</span>
             </div>
-            <h1 className="mt-2 text-2xl font-semibold tracking-normal text-[#172022] sm:text-3xl">
-              Bridge career skill report
-            </h1>
           </div>
 
-          <div className="flex items-center gap-2 rounded-lg border border-[#d8d4ca] bg-white px-3 py-2 text-sm text-[#52615d]">
-            <CircleCheck className={cn("size-4", isAuthenticated ? "text-[#247a70]" : "text-[#a66237]")} />
-            {isAuthenticated ? `${profile.name} signed in` : "Prototype session pending"}
+          <div className={cn("ja-session-badge", isAuthenticated && "ja-session-badge--active")}>
+            <CircleCheck size={13} />
+            {isAuthenticated ? `${profile.name} signed in` : "Session pending"}
           </div>
         </header>
 
+        {/* ── Page title ── */}
+        <div className="ja-page-title-row">
+          <div className="ja-page-eyebrow">
+            <BriefcaseBusiness size={13} />
+            Job Analyzer
+          </div>
+          <h1 className="ja-page-title">Career skill report</h1>
+          <p className="ja-page-subtitle">
+            Paste a job description to extract required skills and see where you stand.
+          </p>
+        </div>
+
+        {/* ── Sign-in gate ── */}
         {!isAuthenticated ? (
-          <section className="grid gap-5 lg:grid-cols-1">
-            {/* Google Sign-In */}
-            <div className="mx-auto rounded-lg border border-[#d8d4ca] bg-white p-5 shadow-sm flex flex-col items-center gap-4">
-              <div className="flex items-center gap-3">
-                <div className="flex size-10 items-center justify-center rounded-lg bg-[#e1f0ed] text-[#247a70]">
-                  <LockKeyhole className="size-5" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold">Sign in with Google</h2>
-                  <p className="text-sm text-[#62706c]">Use your Google account to start the prototype session.</p>
-                </div>
-              </div>
-              <div id="google-signin-button"></div>
+          <div className="ja-signin-card">
+            <div className="ja-card-icon-wrap" style={{ background: "rgba(36, 122, 112, 0.15)", color: "#247a70" }}>
+              <LockKeyhole size={18} />
             </div>
-          </section>
+            <div>
+              <h2 className="ja-card-title">Sign in with Google</h2>
+              <p className="ja-card-subtitle">Use your Google account to start the prototype session.</p>
+            </div>
+            <div id="google-signin-button" className="ja-google-btn" />
+          </div>
         ) : (
-          <section className="grid gap-5 xl:grid-cols-[380px_minmax(0,1fr)]">
-            <aside className="rounded-lg border border-[#d8d4ca] bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="flex size-10 items-center justify-center rounded-lg bg-[#e1f0ed] text-[#247a70]">
-                  <UserRound className="size-5" />
+          <div className="ja-workspace">
+            {/* ── Profile sidebar ── */}
+            <aside className="ja-card ja-profile">
+              <div className="ja-card-header">
+                <div className="ja-card-icon-wrap" style={{ background: "rgba(36, 122, 112, 0.15)", color: "#247a70" }}>
+                  <UserRound size={18} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold">User profile</h2>
-                  <p className="text-sm text-[#62706c]">Candidate inputs for gap analysis.</p>
+                  <h2 className="ja-card-title">User profile</h2>
+                  <p className="ja-card-subtitle">Candidate inputs for gap analysis.</p>
                 </div>
               </div>
 
-              <div className="mt-5 grid gap-4">
-                <label className="grid gap-1.5 text-sm font-medium">
+              <div className="ja-fields">
+                <label className="ja-label">
                   Current skills
                   <textarea
-                    className="min-h-24 resize-y rounded-md border border-[#c9c4b8] bg-[#fbfaf6] px-3 py-2 text-sm outline-none focus:border-[#247a70] focus:ring-3 focus:ring-[#247a70]/15"
+                    className="ja-textarea"
                     value={profile.skills}
-                    onChange={(event) => updateProfile("skills", event.target.value)}
+                    onChange={(e) => updateProfile("skills", e.target.value)}
                   />
                 </label>
 
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
-                  <label className="grid gap-1.5 text-sm font-medium">
+                <div className="ja-fields-row">
+                  <label className="ja-label">
                     Years experience
                     <input
-                      className="h-10 rounded-md border border-[#c9c4b8] bg-[#fbfaf6] px-3 text-sm outline-none focus:border-[#247a70] focus:ring-3 focus:ring-[#247a70]/15"
+                      className="ja-input"
                       min="0"
                       type="number"
                       value={profile.yearsExperience}
-                      onChange={(event) => updateProfile("yearsExperience", event.target.value)}
+                      onChange={(e) => updateProfile("yearsExperience", e.target.value)}
                     />
                   </label>
-                  <label className="grid gap-1.5 text-sm font-medium">
-                    Preferred work type
+                  <label className="ja-label">
+                    Work type
                     <select
-                      className="h-10 rounded-md border border-[#c9c4b8] bg-[#fbfaf6] px-3 text-sm outline-none focus:border-[#247a70] focus:ring-3 focus:ring-[#247a70]/15"
+                      className="ja-input"
                       value={profile.workType}
-                      onChange={(event) => updateProfile("workType", event.target.value)}
+                      onChange={(e) => updateProfile("workType", e.target.value)}
                     >
                       <option>Remote</option>
                       <option>Hybrid</option>
@@ -255,51 +253,53 @@ export function CareerPrototype() {
                   </label>
                 </div>
 
-                <label className="grid gap-1.5 text-sm font-medium">
+                <label className="ja-label">
                   Target job
                   <input
-                    className="h-10 rounded-md border border-[#c9c4b8] bg-[#fbfaf6] px-3 text-sm outline-none focus:border-[#247a70] focus:ring-3 focus:ring-[#247a70]/15"
+                    className="ja-input"
                     value={profile.targetJob}
-                    onChange={(event) => updateProfile("targetJob", event.target.value)}
+                    onChange={(e) => updateProfile("targetJob", e.target.value)}
                   />
                 </label>
 
-                <label className="grid gap-1.5 text-sm font-medium">
+                <label className="ja-label">
                   Location
                   <input
-                    className="h-10 rounded-md border border-[#c9c4b8] bg-[#fbfaf6] px-3 text-sm outline-none focus:border-[#247a70] focus:ring-3 focus:ring-[#247a70]/15"
+                    className="ja-input"
                     value={profile.location}
-                    onChange={(event) => updateProfile("location", event.target.value)}
+                    onChange={(e) => updateProfile("location", e.target.value)}
                   />
                 </label>
               </div>
             </aside>
 
-            <div className="grid gap-5">
-              <form onSubmit={handleAnalyze} className="rounded-lg border border-[#d8d4ca] bg-white p-5 shadow-sm">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-10 items-center justify-center rounded-lg bg-[#fff0d8] text-[#a66237]">
-                      <BriefcaseBusiness className="size-5" />
+            {/* ── Right column ── */}
+            <div className="ja-main-col">
+              {/* Job description form */}
+              <form onSubmit={handleAnalyze} className="ja-card">
+                <div className="ja-card-header ja-card-header--between">
+                  <div className="ja-card-header">
+                    <div className="ja-card-icon-wrap" style={{ background: "rgba(166, 98, 55, 0.15)", color: "#c8874a" }}>
+                      <BriefcaseBusiness size={18} />
                     </div>
                     <div>
-                      <h2 className="text-lg font-semibold">Job description analyzer</h2>
-                      <p className="text-sm text-[#62706c]">Paste a role description to extract requirements.</p>
+                      <h2 className="ja-card-title">Job description analyzer</h2>
+                      <p className="ja-card-subtitle">Paste a role description to extract requirements.</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-[#62706c]">
-                    <MapPin className="size-4" />
-                    {profile.location} / {profile.workType}
+                  <div className="ja-location-chip">
+                    <MapPin size={12} />
+                    {profile.location} · {profile.workType}
                   </div>
                 </div>
 
-                <label className="mt-5 grid gap-1.5 text-sm font-medium">
+                <label className="ja-label" style={{ marginTop: "20px" }}>
                   Job description
                   <textarea
-                    className="min-h-48 resize-y rounded-md border border-[#c9c4b8] bg-[#fbfaf6] px-3 py-2 text-sm leading-6 outline-none focus:border-[#247a70] focus:ring-3 focus:ring-[#247a70]/15"
+                    className="ja-textarea ja-textarea--tall"
                     value={jobDescription}
-                    onChange={(event) => {
-                      setJobDescription(event.target.value);
+                    onChange={(e) => {
+                      setJobDescription(e.target.value);
                       setHasAnalyzed(false);
                       setExtractionSource(null);
                       setExtractNotice("");
@@ -309,129 +309,138 @@ export function CareerPrototype() {
                   />
                 </label>
 
-                {extractError ? (
-                  <p className="mt-3 rounded-md border border-[#f0b9a1] bg-[#fff5ef] px-3 py-2 text-sm text-[#8a3d20]">
-                    {extractError}
-                  </p>
-                ) : null}
+                {extractError && (
+                  <p className="ja-error">{extractError}</p>
+                )}
 
-                <Button className="mt-4 h-10 bg-[#247a70] hover:bg-[#1d635b]" disabled={isExtracting} type="submit">
-                  {isExtracting ? "Extracting..." : "Extract skills"}
-                  <Sparkles className="size-4" />
-                </Button>
+                <button
+                  className={cn("ja-extract-btn", isExtracting && "ja-extract-btn--loading")}
+                  disabled={isExtracting}
+                  type="submit"
+                >
+                  {isExtracting ? (
+                    <>
+                      <span className="ja-spinner" />
+                      Extracting…
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={14} />
+                      Extract skills
+                    </>
+                  )}
+                </button>
               </form>
 
-              <section className="rounded-lg border border-[#d8d4ca] bg-white p-5 shadow-sm">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-10 items-center justify-center rounded-lg bg-[#e8edf3] text-[#385f8f]">
-                      <ClipboardList className="size-5" />
+              {/* Skill report */}
+              <section className="ja-card">
+                <div className="ja-card-header ja-card-header--between">
+                  <div className="ja-card-header">
+                    <div className="ja-card-icon-wrap" style={{ background: "rgba(56, 95, 143, 0.15)", color: "#6b9fd4" }}>
+                      <ClipboardList size={18} />
                     </div>
                     <div>
-                      <h2 className="text-lg font-semibold">Skill report</h2>
-                      <p className="text-sm text-[#62706c]">
+                      <h2 className="ja-card-title">Skill report</h2>
+                      <p className="ja-card-subtitle">
                         {hasAnalyzed
                           ? `Target: ${profile.targetJob}`
                           : isExtracting
-                            ? "Extracting skills from the job description."
+                            ? "Extracting skills from the job description…"
                             : "Run extraction to generate the report."}
                       </p>
                     </div>
                   </div>
 
-                  <div className="rounded-lg border border-[#d8d4ca] px-4 py-3 text-center">
-                    <div className="text-2xl font-semibold text-[#247a70]">{hasAnalyzed ? readinessScore : 0}%</div>
-                    <div className="text-xs font-medium uppercase tracking-normal text-[#62706c]">Skill match</div>
+                  <div className="ja-score-badge">
+                    <span className="ja-score-value">{hasAnalyzed ? readinessScore : 0}%</span>
+                    <span className="ja-score-label">Skill match</span>
                   </div>
                 </div>
 
                 {hasAnalyzed ? (
-                  <div className="mt-5 grid gap-5">
-                    <div className="flex flex-wrap items-center gap-2 text-sm">
-                      {extractionSource ? (
-                        <span
-                          className={cn(
-                            "rounded-md px-2.5 py-1 font-medium",
-                            extractionSource === "gemini"
-                              ? "bg-[#e1f0ed] text-[#247a70]"
-                              : "bg-[#fff0d8] text-[#8a5a18]",
-                          )}
-                        >
+                  <div className="ja-report">
+                    {/* Source notice */}
+                    <div className="ja-source-row">
+                      {extractionSource && (
+                        <span className={cn("ja-source-chip", extractionSource === "gemini" ? "ja-source-chip--gemini" : "ja-source-chip--local")}>
                           {extractionSource === "gemini" ? "Gemini extraction" : "Local fallback"}
                         </span>
-                      ) : null}
-                      {extractNotice ? <span className="text-[#62706c]">{extractNotice}</span> : null}
+                      )}
+                      {extractNotice && <span className="ja-notice-text">{extractNotice}</span>}
                     </div>
 
-                    <div className="grid gap-4 lg:grid-cols-3">
-                      <SkillGroup title="Technical" skills={groupByCategory(extractedSkills, "Technical")} />
-                      <SkillGroup title="Soft" skills={groupByCategory(extractedSkills, "Soft")} />
-                      <SkillGroup title="Experience" skills={groupByCategory(extractedSkills, "Experience")} />
+                    {/* Skill category groups */}
+                    <div className="ja-skill-groups">
+                      <DarkSkillGroup title="Technical" skills={groupByCategory(extractedSkills, "Technical")} />
+                      <DarkSkillGroup title="Soft" skills={groupByCategory(extractedSkills, "Soft")} />
+                      <DarkSkillGroup title="Experience" skills={groupByCategory(extractedSkills, "Experience")} />
                     </div>
 
-                    <div className="grid gap-4 lg:grid-cols-2">
-                      <ReportList title="Strong" emptyText="No overlaps yet." skills={strongSkills} tone="strong" />
-                      <ReportList title="Missing" emptyText="No gaps found." skills={missingSkills} tone="missing" />
+                    {/* Strong / Missing lists */}
+                    <div className="ja-report-lists">
+                      <DarkReportList title="Strong" emptyText="No overlaps yet." skills={strongSkills} tone="strong" />
+                      <DarkReportList title="Missing" emptyText="No gaps found." skills={missingSkills} tone="missing" />
                     </div>
 
-                    <div>
-                      <h3 className="text-sm font-semibold uppercase tracking-normal text-[#52615d]">Priority score</h3>
-                      <div className="mt-3 grid gap-3 md:grid-cols-3">
-                        {missingSkills.slice(0, 6).map((skill) => (
-                          <div key={skill.name} className="rounded-lg border border-[#d8d4ca] bg-[#fbfaf6] p-3">
-                            <div className="flex items-center justify-between gap-3">
-                              <span className="font-medium">{skill.name}</span>
-                              <span
-                                className={cn(
-                                  "rounded-md px-2 py-1 text-xs font-semibold",
-                                  skill.importance >= 8
-                                    ? "bg-[#f8dccd] text-[#8a3d20]"
-                                    : "bg-[#e8edf3] text-[#385f8f]",
-                                )}
-                              >
-                                {priorityLabel(skill.importance)}
-                              </span>
+                    {/* Priority scores */}
+                    {missingSkills.length > 0 && (
+                      <div>
+                        <h3 className="ja-section-label">Priority score</h3>
+                        <div className="ja-priority-grid">
+                          {missingSkills.slice(0, 6).map((skill) => (
+                            <div key={skill.name} className="ja-priority-card">
+                              <div className="ja-priority-card-top">
+                                <span className="ja-priority-skill-name">{skill.name}</span>
+                                <span className={cn("ja-priority-chip", skill.importance >= 8 ? "ja-priority-chip--high" : "ja-priority-chip--medium")}>
+                                  {priorityLabel(skill.importance)}
+                                </span>
+                              </div>
+                              <p className="ja-priority-importance">Importance {skill.importance}/10</p>
                             </div>
-                            <p className="mt-2 text-sm text-[#62706c]">Importance {skill.importance}/10</p>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 ) : (
-                  <div className="mt-5 rounded-lg border border-dashed border-[#c9c4b8] bg-[#fbfaf6] p-6 text-sm text-[#62706c]">
+                  <div className="ja-empty-report">
                     The first report will appear here after skill extraction.
                   </div>
                 )}
               </section>
             </div>
-          </section>
+          </div>
         )}
+
+        {/* ── Footer ── */}
+        <footer className="dashboard-footer" style={{ marginTop: "48px" }}>
+          <span>Bridge Career Agent</span>
+          <span className="dashboard-footer-sep">·</span>
+          <span>Job Analyzer · Phase 1</span>
+        </footer>
       </div>
     </main>
   );
 }
 
-function SkillGroup({ title, skills }: { title: string; skills: ExtractedSkill[] }) {
+function DarkSkillGroup({ title, skills }: { title: string; skills: ExtractedSkill[] }) {
   return (
-    <div className="rounded-lg border border-[#d8d4ca] bg-[#fbfaf6] p-4">
-      <h3 className="text-sm font-semibold uppercase tracking-normal text-[#52615d]">{title}</h3>
-      <div className="mt-3 flex flex-wrap gap-2">
+    <div className="ja-skill-group">
+      <h3 className="ja-section-label">{title}</h3>
+      <div className="ja-skill-chips">
         {skills.length ? (
           skills.map((skill) => (
-            <span key={skill.name} className="rounded-md bg-white px-2.5 py-1 text-sm ring-1 ring-[#d8d4ca]">
-              {skill.name}
-            </span>
+            <span key={skill.name} className="ja-skill-chip">{skill.name}</span>
           ))
         ) : (
-          <span className="text-sm text-[#62706c]">None extracted</span>
+          <span className="ja-muted">None extracted</span>
         )}
       </div>
     </div>
   );
 }
 
-function ReportList({
+function DarkReportList({
   title,
   emptyText,
   skills,
@@ -443,25 +452,20 @@ function ReportList({
   tone: "strong" | "missing";
 }) {
   return (
-    <div className="rounded-lg border border-[#d8d4ca] bg-[#fbfaf6] p-4">
-      <h3 className="text-sm font-semibold uppercase tracking-normal text-[#52615d]">{title}</h3>
-      <div className="mt-3 grid gap-2">
+    <div className="ja-report-list">
+      <h3 className="ja-section-label">{title}</h3>
+      <div className="ja-report-list-items">
         {skills.length ? (
           skills.map((skill) => (
-            <div key={skill.name} className="flex items-center justify-between gap-3 rounded-md bg-white p-3">
-              <span className="font-medium">{skill.name}</span>
-              <span
-                className={cn(
-                  "rounded-md px-2 py-1 text-xs font-semibold",
-                  tone === "strong" ? "bg-[#e1f0ed] text-[#247a70]" : "bg-[#fff0d8] text-[#8a5a18]",
-                )}
-              >
+            <div key={skill.name} className="ja-report-row">
+              <span className="ja-report-skill-name">{skill.name}</span>
+              <span className={cn("ja-report-chip", tone === "strong" ? "ja-report-chip--strong" : "ja-report-chip--missing")}>
                 {tone === "strong" ? "Matched" : priorityLabel(skill.importance)}
               </span>
             </div>
           ))
         ) : (
-          <p className="text-sm text-[#62706c]">{emptyText}</p>
+          <p className="ja-muted">{emptyText}</p>
         )}
       </div>
     </div>
