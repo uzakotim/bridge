@@ -29,10 +29,10 @@ export const verifyGoogleToken = action({
 
     // Upsert user via typed mutation reference
     const userId = await ctx.runMutation(api.users.createOrFetch, {
-      email,
+      email: email,
       name: name ?? "",
     });
 
-    return { _id: userId, email, name: name ?? "" };
+    return { _id: userId, email: email, name: name ?? "" };
   },
 });

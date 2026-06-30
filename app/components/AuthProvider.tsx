@@ -22,6 +22,7 @@ interface AuthContextValue {
   signOut: () => void;
 }
 
+import { api } from "@/convex/_generated/api";
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -29,39 +30,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   // Mutation to create or fetch a user in Convex
-  const getOrCreateUser = useMutation("users:createOrFetch");
+
+
+  const getOrCreateUser = useMutation(api.users.createOrFetch);
 
   // Load Google Identity Services script once on client mount
   useEffect(() => {
     const script = document.createElement("script");
+
     script.src = "https://accounts.google.com/gsi/client";
     script.async = true;
+    script.onload = () => {
+      console.log("Google Identity loaded");
+    };
+
     document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
   }, []);
   // app/components/AuthProvider.tsx (excerpt)
   const signInWithGoogle = async () => {
     // 1️⃣ Open Google sign‑in popup (use Google Identity Services)
-    const client = google.accounts.oauth2.initTokenClient({
+    const client = google.accounts.id.initialize({
       client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
-      scope: "email profile openid",
       callback: async (response: any) => {
-        // 2️⃣ Send the ID token to our Convex endpoint
-        const userInfo = await fetch("/api/verify-google", {
+        const token = response.credential;
+        if (!token) {
+          console.error("No Google credential received");
+          return;
+        }
+        const res = await fetch("/api/verify-google", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token: response.access_token }),
-        }).then((r) => r.json());
+          body: JSON.stringify({ token }),
+        });
 
-        // 3️⃣ Persist user in Convex & update React state
+        const userInfo = await res.json();
+
+        if (!userInfo.email || !userInfo.name) {
+          console.error("Invalid Google user payload:", userInfo);
+          throw new Error("Google authentication failed");
+        }
+
         const { _id } = await getOrCreateUser({
           email: userInfo.email,
           name: userInfo.name,
         });
-        setUser({ _id, email: userInfo.email, name: userInfo.name });
-      },
+
+        setUser({
+          _id,
+          email: userInfo.email,
+          name: userInfo.name,
+        });
+      }
     });
 
-    client.requestAccessToken(); // triggers Google sign‑in UI
+    google.accounts.id.prompt();
   };
 
   const signOut = () => {
