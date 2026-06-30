@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth } from "@/app/components/AuthProvider";
 import {
   ArrowLeft,
   BriefcaseBusiness,
@@ -48,7 +49,7 @@ const starterJobDescription =
 
 export function CareerPrototype() {
   const [profile, setProfile] = useState<Profile>(starterProfile);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { user } = useAuth();
   const [jobDescription, setJobDescription] = useState(starterJobDescription);
   const [extractedSkills, setExtractedSkills] = useState<ExtractedSkill[]>([]);
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
@@ -91,7 +92,6 @@ export function CareerPrototype() {
         name: data.name ?? prev.name,
         email: data.email ?? prev.email,
       }));
-      setIsAuthenticated(true);
     } catch (err) {
       console.error("Google sign‑in error:", err);
     }
@@ -164,7 +164,7 @@ export function CareerPrototype() {
         {/* ── Header ── */}
         <header className="ja-header">
           <div className="ja-header-left">
-            <Link href="/dashboard" className="ja-back-link">
+            <Link href="/" className="ja-back-link">
               <ArrowLeft size={14} />
               Dashboard
             </Link>
@@ -174,9 +174,9 @@ export function CareerPrototype() {
             </div>
           </div>
 
-          <div className={cn("ja-session-badge", isAuthenticated && "ja-session-badge--active")}>
+          <div className={cn("ja-session-badge", user && "ja-session-badge--active")}>
             <CircleCheck size={13} />
-            {isAuthenticated ? `${profile.name} signed in` : "Session pending"}
+            {user ? `${user.name} signed in` : "Session pending"}
           </div>
         </header>
 
@@ -193,7 +193,7 @@ export function CareerPrototype() {
         </div>
 
         {/* ── Sign-in gate ── */}
-        {!isAuthenticated ? (
+        {!user ? (
           <div className="ja-signin-card">
             <div className="ja-card-icon-wrap" style={{ background: "rgba(36, 122, 112, 0.15)", color: "#247a70" }}>
               <LockKeyhole size={18} />
